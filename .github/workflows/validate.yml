@@ -1,0 +1,28 @@
+# neocody/shannon is a public fork; standard GitHub-hosted Linux is free here.
+# Public forks are outside the private dedicated-runner trust boundary.
+name: TypeScript build validation
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: validation-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    if: github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Install without lifecycle scripts and compile both packages
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm ci --prefix mcp-server --ignore-scripts --no-audit --no-fund
+          npm run build --prefix mcp-server
+          npm run build
